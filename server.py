@@ -149,7 +149,7 @@ def create_balls(balls, n):
 def get_start_location(players):
     """
     picks a start location for a player based on other player
-    locations. It wiill ensure it does not spawn inside another player
+    locations. It will ensure it does not spawn inside another player
 
     :param players: dict
     :return: tuple (x,y)

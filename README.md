@@ -1,3 +1,4 @@
+#Aragio
 A duplication of the game Agar.io written in python
 
 # Running on Local Network
@@ -20,5 +21,6 @@ To run the game you must have an instance of _server.py_ running. You can then c
 
 If you are having connections issues try disabling the firewall on the server and client machines.
 
-#Credit
+# Credit
+
 Forked from Tech with Tim's Arag.IO

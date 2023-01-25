@@ -1,4 +1,4 @@
-# small network game that has differnt blobs
+# small network game that has different blobs
 # moving around the screen
 
 import contextlib
@@ -24,8 +24,8 @@ COLORS = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0),
           (0, 128, 255), (0, 0, 255), (0, 0, 255), (128, 0, 255), (255, 0, 255), (255, 0, 128), (128, 128, 128), (0, 0, 0)]
 
 # Dynamic Variables
-players = {}
-balls = []
+# players = {}
+# balls = []
 
 # FUNCTIONS
 
@@ -72,7 +72,7 @@ def redraw_window(players, balls, game_time, score):
         # render and draw name for each player
         text = NAME_FONT.render(p["name"], 1, (0, 0, 0))
         WIN.blit(text, (p["x"] - text.get_width() /
-                 2, p["y"] - text.get_height()/2))
+                        2, p["y"] - text.get_height()/2))
 
     # draw scoreboard
     sort_players = list(
@@ -104,7 +104,7 @@ def main(name):
     :param players: a list of dicts represting a player
     :return: None
     """
-    global players
+    # global players
 
     # start by connecting to the network
     server = Network()
@@ -119,6 +119,7 @@ def main(name):
         clock.tick(30)  # 30 fps max
         player = players[current_id]
         vel = START_VEL - round(player["score"]/14)
+
         if vel <= 1:
             vel = 1
 
@@ -144,7 +145,7 @@ def main(name):
                 player["y"] = player["y"] + vel
 
         data = "move " + str(player["x"]) + " " + str(player["y"])
-
+        print("data", data)
         # send data to server and recieve back all players information
         balls, players, game_time = server.send(data)
 
@@ -177,7 +178,7 @@ while True:
             "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
 
 # make window start in top left hand corner
-os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
+# os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
 
 # setup pygame window
 WIN = pygame.display.set_mode((W, H))
