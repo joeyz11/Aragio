@@ -16,7 +16,9 @@ PORT = 5555
 # HOST_NAME = socket.gethostname()
 # SERVER_IP = socket.gethostbyname(HOST_NAME)
 # SERVER_IP = socket.gethostbyname("0.0.0.0")
-SERVER_IP = socket.gethostbyname("10.0.0.14")
+# SERVER_IP = socket.gethostbyname("10.0.0.14")
+# SERVER_IP = socket.gethostbyname("172.16.10.182")
+SERVER_IP = socket.gethostbyname("192.168.1.228")
 
 # try to connect to server
 try:
