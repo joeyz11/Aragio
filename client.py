@@ -1,33 +1,31 @@
 import socket
 import _pickle as pickle
+from util import FORMAT, HOST_IP_ADDR, PORT
 
 
 class Network:
     """
     class to connect, send and recieve information from the server
 
-    need to hardcode the host attirbute to be the server's ip
+    need to hardcode the host attribute to be the server's ip
     """
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.client.settimeout(10.0)
-        # self.host = "0.0.0.0"
-        # self.host = "172.16.10.182"
-        self.host = "192.168.1.228"
-        self.port = 5555
+        self.host = HOST_IP_ADDR
+        self.port = PORT
         self.addr = (self.host, self.port)
 
     def connect(self, name):
         """
         connects to server and returns the id of the client that connected
         :param name: str
-        :return: int reprsenting id
+        :return: int representing id
         """
         self.client.connect(self.addr)
-        self.client.send(str.encode(name))
+        self.client.send(name.encode(FORMAT))
         val = self.client.recv(8)
-        return int(val.decode())  # can be int because will be an int id
+        return int(val.decode(FORMAT))  # can be int because will be an int id
 
     def disconnect(self):
         """
@@ -48,7 +46,7 @@ class Network:
             if pick:
                 self.client.send(pickle.dumps(data))
             else:
-                self.client.send(str.encode(data))
+                self.client.send(data.encode(FORMAT))
             reply = self.client.recv(2048*4)
             try:
                 reply = pickle.loads(reply)

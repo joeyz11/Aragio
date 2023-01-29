@@ -1,4 +1,4 @@
-from util import W, H, START_RADIUS, ROUND_TIME, MASS_LOSS_TIME
+from util import W, H, FORMAT, NAME_MAX_LEN, HOST_IP_ADDR, PORT, START_RADIUS, MIN_NUM_BALL, DEL_SCORE, ROUND_TIME, MASS_LOSS_TIME, MIN_SCORE, SCORE_DEP_RATE, COLORS
 import socket
 from _thread import *
 import _pickle as pickle
@@ -11,14 +11,13 @@ S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 S.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Set constants
-PORT = 5555
 
 # HOST_NAME = socket.gethostname()
 # SERVER_IP = socket.gethostbyname(HOST_NAME)
 # SERVER_IP = socket.gethostbyname("0.0.0.0")
 # SERVER_IP = socket.gethostbyname("10.0.0.14")
 # SERVER_IP = socket.gethostbyname("172.16.10.182")
-SERVER_IP = socket.gethostbyname("192.168.1.228")
+SERVER_IP = socket.gethostbyname(HOST_IP_ADDR)
 
 # try to connect to server
 try:
@@ -37,39 +36,39 @@ players = {}
 balls = []
 connections = 0
 _id = 0
-colors = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 128), (0, 255, 255),
-          (0, 128, 255), (0, 0, 255), (0, 0, 255), (128, 0, 255), (255, 0, 255), (255, 0, 128), (128, 128, 128), (0, 0, 0)]
 start = False
-stat_time = 0
-game_time = "Starting Soon"
+game_time = ROUND_TIME
 nxt = 1
 
 
-# FUNCTIONS
-
+# helper functions
 
 def release_mass(players):
     """
-    releases the mass of players
+    Decreases score of players whose score is greater than MIN_SCORE to SCORE_DEP_RATE the original score. 
 
-    :param players: dict
-    :return: None
+    Parameters
+        players (dict): a dict of players mapping id to player 
+            where each player is the dict {"x": int, "y": int, "color": str, "score": int, "name": str}
+    Returns
+        None
     """
     for player in players:
         p = players[player]
-        if p["score"] > 8:
-            p["score"] = math.floor(p["score"]*0.95)
+        if p["score"] > MIN_SCORE:
+            p["score"] = math.floor(p["score"]*SCORE_DEP_RATE)
 
 
 def check_collision(players, balls):
     """
-    checks if any of the player have collided with any of the balls
+    Checks if any of the player have collided with any of the balls.
 
-    :param players: a dictonary of players
-    :param balls: a list of balls
-    :return: None
+    Parameters
+        players (dict): dict of players mapping player id to player data
+        balls (list): a list of balls
+    Returns
+        None
     """
-    to_delete = []
     for player in players:
         p = players[player]
         x = p["x"]
@@ -80,16 +79,18 @@ def check_collision(players, balls):
 
             dis = math.sqrt((x - bx)**2 + (y-by)**2)
             if dis <= START_RADIUS + p["score"]:
-                p["score"] = p["score"] + 0.5
+                p["score"] = p["score"] + DEL_SCORE
                 balls.remove(ball)
 
 
 def player_collision(players):
     """
-    checks for player collision and handles that collision
+    Checks for player collision and handles that collision.
 
-    :param players: dict
-    :return: None
+    Parameters
+        players (dict): dict of players mapping player id to player data
+    Returns
+        None
     """
     sort_players = sorted(players, key=lambda x: players[x]["score"])
     for x, player1 in enumerate(sort_players):
@@ -113,13 +114,15 @@ def player_collision(players):
 
 def create_balls(balls, n):
     """
-    creates orbs/balls on the screen
+    Creates balls
 
-    :param balls: a list to add balls/orbs to
-    :param n: the amount of balls to make
-    :return: None
+    Parameters
+        balls: a list to add balls to
+        n: the amount of balls to add
+    Returns
+        None
     """
-    for i in range(n):
+    for _ in range(n):
         while True:
             stop = True
             x = random.randrange(0, W)
@@ -132,16 +135,18 @@ def create_balls(balls, n):
             if stop:
                 break
 
-        balls.append((x, y, random.choice(colors)))
+        balls.append((x, y, random.choice(COLORS)))
 
 
 def get_start_location(players):
     """
-    picks a start location for a player based on other player
-    locations. It will ensure it does not spawn inside another player
+    Picks a start location for a player based on other player locations. 
+    It will ensure it does not spawn inside another player.
 
-    :param players: dict
-    :return: tuple (x,y)
+    Parameters
+        players (dict): dict of players mapping player id to player data
+    Returns
+        (x, y) (tuple): tuple of x, y coordinate
     """
     while True:
         stop = True
@@ -171,51 +176,54 @@ def threaded_client(conn, _id):
     current_id = _id
 
     # recieve a name from the client
-    data = conn.recv(16)
-    name = data.decode("utf-8")
+    name_data = conn.recv(4*NAME_MAX_LEN)
+    name = name_data.decode(FORMAT)
     print("[LOG]", name, "connected to the server.")
+    # pickle data and send initial info to clients
+    conn.send(str(current_id).encode(FORMAT))
 
     # Setup properties for each new player
-    color = colors[current_id]
+    color = COLORS[current_id % len(COLORS)]
     x, y = get_start_location(players)
-    players[current_id] = {"x": x, "y": y, "color": color,
-                           "score": 0, "name": name}  # x, y color, score, name
+    # initialize player data
+    players[current_id] = {"x": x, "y": y,
+                           "color": color, "score": 0, "name": name}
 
-    # pickle data and send initial info to clients
-    conn.send(str.encode(str(current_id)))
+    init_req_data = conn.recv(8)
+    init_req = init_req_data.decode(FORMAT)
+    if init_req == "get":
+        print('init get request received')
+        conn.send(pickle.dumps((balls, players, game_time)))
+    else:
+        print("[DISCONNECT] error with initial request")
 
     # server will recieve basic commands from client
     # it will send back all of the other clients info
     '''
 	commands start with:
 	move
-	jump
-	get
-	id - returns id of client
 	'''
     while True:
-
         if start:
             game_time = ROUND_TIME - round(time.time()-start_time)
-            # if the game time passes the round time the game will stop
             if game_time <= 0:
                 start = False
             else:
-                if game_time // MASS_LOSS_TIME == nxt:
+                if (ROUND_TIME - game_time) // MASS_LOSS_TIME == nxt:
                     nxt += 1
                     release_mass(players)
                     print(f"[GAME] {name}'s Mass depleting")
         try:
             # Recieve data from client
-            data = conn.recv(32)
+            data = conn.recv(64)
 
             if not data:
+                # print('No data: breaking')
                 break
 
-            data = data.decode("utf-8")
+            data = data.decode(FORMAT)
             #print("[DATA] Recieved", data, "from client id:", current_id)
 
-            # look for specific commands from recieved data
             if data.split(" ")[0] == "move":
                 split_data = data.split(" ")
                 x = int(split_data[1])
@@ -229,35 +237,27 @@ def threaded_client(conn, _id):
                     player_collision(players)
 
                 # if the amount of balls is less than 150 create more
-                if len(balls) < 150:
-                    create_balls(balls, random.randrange(100, 150))
+                if len(balls) < MIN_NUM_BALL:
+                    create_balls(balls, random.randrange(100, MIN_NUM_BALL))
                     print("[GAME] Generating more orbs")
 
-                send_data = pickle.dumps((balls, players, game_time))
+                # send data back to clients
+                conn.send(pickle.dumps((balls, players, game_time)))
 
-            elif data.split(" ")[0] == "id":
-                # if user requests id then send it
-                send_data = str.encode(str(current_id))
-
-            elif data.split(" ")[0] == "jump":
-                send_data = pickle.dumps((balls, players, game_time))
             else:
-                # any other command just send back list of players
-                send_data = pickle.dumps((balls, players, game_time))
-
-            # send data back to clients
-            conn.send(send_data)
+                start = False
+                print("[DISCONNECT] error with request")
+                break
 
         except Exception as e:
             print(e)
             break  # if an exception has been reached disconnect client
 
-        time.sleep(0.001)
+        # time.sleep(0.001)
 
-    # When user disconnects
+    # user disconnects
     print("[DISCONNECT] Name:", name,
           ", Client Id:", current_id, "disconnected")
-
     connections -= 1
     del players[current_id]  # remove client information from players list
     conn.close()  # close connection
@@ -266,7 +266,7 @@ def threaded_client(conn, _id):
 # MAINLOOP
 
 # setup level with balls
-create_balls(balls, random.randrange(200, 250))
+create_balls(balls, random.randrange(200, 2*MIN_NUM_BALL))
 
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")

@@ -1,4 +1,4 @@
-from util import W, H, NAME_MAX_LEN, START_RADIUS, START_VEL, BALL_RADIUS
+from util import W, H, NAME_MAX_LEN, START_RADIUS, ROUND_TIME, START_VEL, BALL_RADIUS
 import contextlib
 with contextlib.redirect_stdout(None):
     import pygame
@@ -28,13 +28,13 @@ def get_user_name():
     Gets user input for name.
 
     Parameters
-        No parameters
+        NAME_MAX_LEN
     Returns
         name (str): string of len between 1 and NAME_MAX_LEN [inclusive]
     """
     while True:
         name = input("Please enter your name: ")
-        if 0 < len(name) < NAME_MAX_LEN:
+        if 1 <= len(name) <= NAME_MAX_LEN:
             return name
             break
         else:
@@ -48,9 +48,13 @@ def convert_time(t_sec):
 
     Parameters
         t_sec (int): time in seconds
+        ROUND_TIME
     Returns
-        t_min (str): time formatted MM:SS as a string
+        t_min (str): time formatted MM:SS as a string if t_sec is less than ROUND_TIME, else return the string `Starting Soon`
     """
+    if t_sec == ROUND_TIME:
+        return "Starting Soon"
+
     min = str(t_sec // 60)
     sec = str(t_sec % 60)
     if len(sec) == 1:
@@ -89,13 +93,18 @@ def redraw_balls(balls):
 
 def redraw_players(players):
     """
+    Draw players to the screen.
 
+    Parameters
+        players (dict): a dict of players mapping id to player 
+        where each player is the dict {"x": int, "y": int, "color": str, "score": int, "name": str}
+    Returns
+        None
     """
     for player in sorted(players, key=lambda x: players[x]["score"]):
         p = players[player]
         pygame.draw.circle(
             SCREEN, p["color"], (p["x"], p["y"]), START_RADIUS + round(p["score"]))
-        # render and draw name for each player
         text = NAME_FONT.render(p["name"], 1, BLACK)
         SCREEN.blit(text, (p["x"] - text.get_width() /
                     2, p["y"] - text.get_height()/2))
@@ -104,19 +113,25 @@ def redraw_players(players):
 
 def redraw_scoreboard(players):
     """
+    Sorts the players by score and draws the scoreboard.
 
+    Parameters
+        players (dict): a dict of players mapping id to player 
+        where each player is the dict {"x": int, "y": int, "color": str, "score": int, "name": str}
+    Returns
+        None
     """
     sort_players = list(
         reversed(sorted(players, key=lambda x: players[x]["score"])))
-    title = TIME_FONT.render("Scoreboard", 1, BLACK)
-    start_y = 25
-    x = W - title.get_width() - 10
+    title = TIME_FONT.render("Scoreboard", True, BLACK)
+    start_y = 50
+    x = W - title.get_width() - 50
     SCREEN.blit(title, (x, 5))
 
     ran = min(len(players), 3)
     for count, i in enumerate(sort_players[:ran]):
         text = SCORE_FONT.render(
-            str(count+1) + ". " + str(players[i]["name"]), 1, BLACK)
+            str(count+1) + ". " + str(players[i]["name"]), True, BLACK)
         SCREEN.blit(text, (x, start_y + count * 20))
     return None
 
@@ -184,6 +199,8 @@ def main(name):
     server = Network()
     curr_id = server.connect(name)
     balls, players, game_time = server.send("get")
+
+    print('players', players)
     clock = pygame.time.Clock()
 
     # game loop
@@ -211,6 +228,7 @@ def main(name):
         data = format_data(curr_p["x"], curr_p["y"])
         # send data to server and recieve back all players information
         balls, players, game_time = server.send(data)
+
         for event in pygame.event.get():
             # quit the game
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
