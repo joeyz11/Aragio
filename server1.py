@@ -13,10 +13,6 @@ S.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # Set constants
 
 # HOST_NAME = socket.gethostname()
-# SERVER_IP = socket.gethostbyname(HOST_NAME)
-# SERVER_IP = socket.gethostbyname("0.0.0.0")
-# SERVER_IP = socket.gethostbyname("10.0.0.14")
-# SERVER_IP = socket.gethostbyname("172.16.10.182")
 SERVER_IP = socket.gethostbyname(HOST_IP_ADDR)
 
 # try to connect to server
@@ -49,7 +45,7 @@ def release_mass(players):
 
     Parameters
         players (dict): a dict of players mapping id to player 
-            where each player is the dict {"x": int, "y": int, "color": str, "score": int, "name": str}
+            where each player is the dict {"x": int, "y": int, "color": tuple, "score": int, "name": str}
     Returns
         None
     """
@@ -134,7 +130,6 @@ def create_balls(balls, n):
                     stop = False
             if stop:
                 break
-
         balls.append((x, y, random.choice(COLORS)))
 
 
@@ -192,7 +187,6 @@ def threaded_client(conn, _id):
     init_req_data = conn.recv(8)
     init_req = init_req_data.decode(FORMAT)
     if init_req == "get":
-        print('init get request received')
         conn.send(pickle.dumps((balls, players, game_time)))
     else:
         print("[DISCONNECT] error with initial request")
@@ -218,11 +212,9 @@ def threaded_client(conn, _id):
             data = conn.recv(64)
 
             if not data:
-                # print('No data: breaking')
                 break
 
             data = data.decode(FORMAT)
-            #print("[DATA] Recieved", data, "from client id:", current_id)
 
             if data.split(" ")[0] == "move":
                 split_data = data.split(" ")
@@ -287,7 +279,3 @@ while True:
     connections += 1
     start_new_thread(threaded_client, (host, _id))
     _id += 1
-
-
-# when program ends
-print("[SERVER] Server offline")
