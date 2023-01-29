@@ -200,7 +200,7 @@ def main(name):
     curr_id = server.connect(name)
     balls, players, game_time = server.send("get")
 
-    print('players', players)
+    # print('players', players)
     clock = pygame.time.Clock()
 
     # game loop
@@ -227,7 +227,9 @@ def main(name):
                 curr_p["y"] = curr_p["y"] + curr_vel
         data = format_data(curr_p["x"], curr_p["y"])
         # send data to server and recieve back all players information
-        balls, players, game_time = server.send(data)
+        # server.send(data)
+        # print('x', x, '\n')
+        # balls, players, game_time = server.send(data)
 
         for event in pygame.event.get():
             # quit the game

@@ -215,6 +215,7 @@ def threaded_client(conn, _id):
                 break
 
             data = data.decode(FORMAT)
+            print('data recv', data)
 
             if data.split(" ")[0] == "move":
                 split_data = data.split(" ")
@@ -233,6 +234,7 @@ def threaded_client(conn, _id):
                     create_balls(balls, random.randrange(100, MIN_NUM_BALL))
                     print("[GAME] Generating more orbs")
 
+                # print((balls, players, game_time))
                 # send data back to clients
                 conn.send(pickle.dumps((balls, players, game_time)))
 
